@@ -1,341 +1,246 @@
-CREATE TABLE products (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    seller_name VARCHAR(100) DEFAULT 'مجهول',
-    product_type ENUM('freefire', 'pes', 'other') NOT NULL,
-    description TEXT NOT NULL,
-    image_url VARCHAR(255) NOT NULL,
-    facebook_link VARCHAR(255) DEFAULT NULL,
-    payment_method ENUM('d17', 'card') NOT NULL,
-    payment_proof_url VARCHAR(255) NOT NULL,
-    card_number VARCHAR(20) DEFAULT NULL,
-    d17_number VARCHAR(20) DEFAULT NULL,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 <?php
-define('DB_HOST', 'localhost');
-define('DB_USER', 'اسم_المستخدم_لـMySQL'); // غيّره
-define('DB_PASS', 'كلمة_المرور');         // غيّره
-define('DB_NAME', 'd17gaming');
-define('UPLOAD_DIR', 'uploads/');
-define('ADMIN_PASSWORD', 'imouzaineb11');
-?>
-body {
-    font-family: 'Tajawal', sans-serif;
-    background: #f8f9fa;
-    margin: 0;
-    padding: 0;
-    direction: rtl;
+// ================ config.php ================
+if (basename(__FILE__) === 'config.php') {
+    define('DB_HOST', 'localhost');
+    define('DB_USER', 'اسم_المستخدم_لـMySQL');
+    define('DB_PASS', 'كلمة_المرور');
+    define('DB_NAME', 'd17gaming');
+    define('UPLOAD_DIR', 'uploads/');
+    define('ADMIN_PASSWORD', 'imouzaineb11');
+    exit;
 }
-.container {
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-h1, h2, h3 {
-    color: #0d6efd;
-    text-align: center;
-}
-.form-group {
-    margin: 15px 0;
-}
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-input, textarea, select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-.btn {
-    background: #0d6efd;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    width: 100%;
-    margin-top: 10px;
-}
-.btn:hover {
-    background: #0b5ed7;
-}
-.upload-area {
-    border: 2px dashed #ccc;
-    padding: 20px;
-    text-align: center;
-    margin: 10px 0;
-    background: #fafafa;
-}
-img {
-    max-width: 100%;
-    height: auto;
-}
-<?php
-require_once 'config.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $product_type = $_POST['product_type'] ?? '';
-    $description = trim($_POST['description'] ?? '');
-    $facebook_link = trim($_POST['facebook_link'] ?? '');
-    $payment_method = $_POST['payment_method'] ?? '';
+// ================ style.css ================
+if (basename($_SERVER['SCRIPT_NAME']) === '/style.css') {
+    header('Content-Type: text/css; charset=utf-8');
+    echo 'body{font-family:"Tajawal",sans-serif;background:#f8f9fa;margin:0;padding:0;direction:rtl}.container{max-width:800px;margin:20px auto;padding:20px;background:white;border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,.1)}h1,h2,h3{color:#0d6efd;text-align:center}.form-group{margin:15px 0}label{display:block;margin-bottom:5px;font-weight:bold}input,textarea,select{width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;font-size:16px;box-sizing:border-box}.btn{background:#0d6efd;color:white;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;width:100%;margin-top:10px}.btn:hover{background:#0b5ed7}.upload-area{border:2px dashed #ccc;padding:20px;text-align:center;margin:10px 0;background:#fafafa}img{max-width:100%;height:auto}';
+    exit;
+}
 
-    if (!$product_type || !$description || !$payment_method) {
-        die("<div class='container' style='color:red;'>يرجى تعبئة جميع الحقول المطلوبة.</div>");
+// ================ vendre.php ================
+if (basename($_SERVER['SCRIPT_NAME']) === '/vendre.php') {
+    require_once 'config.php';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $product_type = $_POST['product_type'] ?? '';
+        $description = trim($_POST['description'] ?? '');
+        $facebook_link = trim($_POST['facebook_link'] ?? '');
+        $payment_method = $_POST['payment_method'] ?? '';
+        if (!$product_type || !$description || !$payment_method) {
+            die("<div class='container' style='color:red;'>يرجى تعبئة جميع الحقول المطلوبة.</div>");
+        }
+        if (!isset($_FILES['product_image']) || !isset($_FILES['payment_proof'])) {
+            die("<div class='container' style='color:red;'>يرجى رفع الصور المطلوبة.</div>");
+        }
+        $product_img = $_FILES['product_image'];
+        if ($product_img['error'] == 0) {
+            $product_ext = pathinfo($product_img['name'], PATHINFO_EXTENSION);
+            $product_filename = 'product_' . time() . rand(100,999) . '.' . strtolower($product_ext);
+            move_uploaded_file($product_img['tmp_name'], UPLOAD_DIR . $product_filename);
+        } else {
+            die("<div class='container' style='color:red;'>خطأ في رفع صورة المنتج.</div>");
+        }
+        $proof_img = $_FILES['payment_proof'];
+        if ($proof_img['error'] == 0) {
+            $proof_ext = pathinfo($proof_img['name'], PATHINFO_EXTENSION);
+            $proof_filename = 'proof_' . time() . rand(100,999) . '.' . strtolower($proof_ext);
+            move_uploaded_file($proof_img['tmp_name'], UPLOAD_DIR . $proof_filename);
+        } else {
+            die("<div class='container' style='color:red;'>خطأ في رفع إثبات الدفع.</div>");
+        }
+        $card_number = null;
+        $d17_number = null;
+        if ($payment_method === 'card') {
+            $card_number = $_POST['card_number'] ?? '';
+        } elseif ($payment_method === 'd17') {
+            $d17_number = '52897520';
+        }
+        try {
+            $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+            $stmt = $pdo->prepare("INSERT INTO products (product_type, description, image_url, facebook_link, payment_method, payment_proof_url, card_number, d17_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$product_type, $description, UPLOAD_DIR . $product_filename, $facebook_link, $payment_method, UPLOAD_DIR . $proof_filename, $card_number, $d17_number]);
+            echo "<div class='container' style='text-align:center; color:green;'><h2>تم إرسال منتجك بنجاح!</h2><p>سنراجعه خلال 10 دقائق. إذا تم قبوله، سيظهر في الموقع فورًا.</p><a href='vendre.php' style='display:inline-block; margin-top:20px; color:#0d6efd;'>رفع منتج آخر</a></div>";
+            exit;
+        } catch (Exception $e) {
+            die("<div class='container' style='color:red;'>حدث خطأ: " . $e->getMessage() . "</div>");
+        }
     }
+    ?>
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <title>ارفع منتجك - D17Gaming</title>
+        <link rel="stylesheet" href="style.css">
+        <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    </head>
+    <body>
+    <div class="container">
+        <h1>ارفع منتجك الآن</h1>
+        <p>رسوم النشر: <strong>1 دينار</strong></p>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>اختر نوع المنتج:</label>
+                <select name="product_type" required>
+                    <option value="">-- اختر --</option>
+                    <option value="freefire">حساب Free Fire</option>
+                    <option value="pes">حساب بيس (PES)</option>
+                    <option value="other">منتج آخر</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>وصف المنتج:</label>
+                <textarea name="description" rows="5" placeholder="اكتب وصفًا جذابًا..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>رابط فيسبوك (اختياري):</label>
+                <input type="url" name="facebook_link" placeholder="https://facebook.com/...">
+            </div>
+            <div class="form-group">
+                <label>رفع صورة المنتج:</label>
+                <div class="upload-area">
+                    <input type="file" name="product_image" accept="image/*" required>
+                </div>
+            </div>
+            <h3>دفع 1 دينار:</h3>
+            <div class="form-group">
+                <label><input type="radio" name="payment_method" value="d17" required> D17</label>
+                <p>أرسل 1 دينار إلى الرقم: <strong>52897520</strong></p>
+                <div class="upload-area">
+                    <label>رفع صورة الإرسال:</label>
+                    <input type="file" name="payment_proof" accept="image/*" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label><input type="radio" name="payment_method" value="card"> بطاقة شحن (أوريدو / أورانج / تونس تيليكوم)</label>
+                <input type="text" name="card_number" placeholder="أدخل الرقم المكتوب على البطاقة (8 أرقام)" maxlength="8">
+                <div class="upload-area">
+                    <label>رفع صورة البطاقة:</label>
+                    <input type="file" name="payment_proof" accept="image/*" required>
+                </div>
+            </div>
+            <button type="submit" class="btn">إرسال المنتج للنشر</button>
+        </form>
+    </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
-    if (!isset($_FILES['product_image']) || !isset($_FILES['payment_proof'])) {
-        die("<div class='container' style='color:red;'>يرجى رفع الصور المطلوبة.</div>");
+// ================ admin/login.php ================
+if (strpos($_SERVER['REQUEST_URI'], '/admin/login.php') !== false) {
+    session_start();
+    require_once '../config.php';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $password = $_POST['password'];
+        if ($password === ADMIN_PASSWORD) {
+            $_SESSION['admin_logged_in'] = true;
+            header('Location: dashboard.php');
+            exit;
+        } else {
+            $error = "كلمة المرور غير صحيحة!";
+        }
     }
+    ?>
+    <!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <title>لوحة التحكم - تسجيل الدخول</title>
+        <link rel="stylesheet" href="../style.css">
+    </head>
+    <body>
+    <div class="container">
+        <h2>تسجيل الدخول إلى لوحة التحكم</h2>
+        <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
+        <form method="POST">
+            <div class="form-group">
+                <label>كلمة المرور:</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">دخول</button>
+        </form>
+    </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
-    // رفع صورة المنتج
-    $product_img = $_FILES['product_image'];
-    if ($product_img['error'] == 0) {
-        $product_ext = pathinfo($product_img['name'], PATHINFO_EXTENSION);
-        $product_filename = 'product_' . time() . rand(100,999) . '.' . strtolower($product_ext);
-        move_uploaded_file($product_img['tmp_name'], UPLOAD_DIR . $product_filename);
-    } else {
-        die("<div class='container' style='color:red;'>خطأ في رفع صورة المنتج.</div>");
+// ================ admin/dashboard.php ================
+if (strpos($_SERVER['REQUEST_URI'], '/admin/dashboard.php') !== false) {
+    session_start();
+    if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
+        header('Location: login.php');
+        exit;
     }
-
-    // رفع إثبات الدفع
-    $proof_img = $_FILES['payment_proof'];
-    if ($proof_img['error'] == 0) {
-        $proof_ext = pathinfo($proof_img['name'], PATHINFO_EXTENSION);
-        $proof_filename = 'proof_' . time() . rand(100,999) . '.' . strtolower($proof_ext);
-        move_uploaded_file($proof_img['tmp_name'], UPLOAD_DIR . $proof_filename);
-    } else {
-        die("<div class='container' style='color:red;'>خطأ في رفع إثبات الدفع.</div>");
-    }
-
-    $card_number = null;
-    $d17_number = null;
-    if ($payment_method === 'card') {
-        $card_number = $_POST['card_number'] ?? '';
-    } elseif ($payment_method === 'd17') {
-        $d17_number = '52897520';
-    }
-
+    require_once '../config.php';
     try {
         $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-        $stmt = $pdo->prepare("
-            INSERT INTO products 
-            (product_type, description, image_url, facebook_link, payment_method, payment_proof_url, card_number, d17_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $product_type,
-            $description,
-            UPLOAD_DIR . $product_filename,
-            $facebook_link,
-            $payment_method,
-            UPLOAD_DIR . $proof_filename,
-            $card_number,
-            $d17_number
-        ]);
-
-        echo "<div class='container' style='text-align:center; color:green;'>";
-        echo "<h2>تم إرسال منتجك بنجاح!</h2>";
-        echo "<p>سنراجعه خلال 10 دقائق. إذا تم قبوله، سيظهر في الموقع فورًا.</p>";
-        echo "<a href='vendre.php' style='display:inline-block; margin-top:20px; color:#0d6efd;'>رفع منتج آخر</a>";
-        echo "</div>";
-        exit;
     } catch (Exception $e) {
-        die("<div class='container' style='color:red;'>حدث خطأ: " . $e->getMessage() . "</div>");
+        die("خطأ في الاتصال بقاعدة البيانات.");
     }
-}
-?>
-
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>ارفع منتجك - D17Gaming</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-<div class="container">
-    <h1>ارفع منتجك الآن</h1>
-    <p>رسوم النشر: <strong>1 دينار</strong></p>
-
-    <form method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label>اختر نوع المنتج:</label>
-            <select name="product_type" required>
-                <option value="">-- اختر --</option>
-                <option value="freefire">حساب Free Fire</option>
-                <option value="pes">حساب بيس (PES)</option>
-                <option value="other">منتج آخر</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>وصف المنتج:</label>
-            <textarea name="description" rows="5" placeholder="اكتب وصفًا جذابًا..." required></textarea>
-        </div>
-
-        <div class="form-group">
-            <label>رابط فيسبوك (اختياري):</label>
-            <input type="url" name="facebook_link" placeholder="https://facebook.com/...">
-        </div>
-
-        <div class="form-group">
-            <label>رفع صورة المنتج:</label>
-            <div class="upload-area">
-                <input type="file" name="product_image" accept="image/*" required>
-            </div>
-        </div>
-
-        <h3>دفع 1 دينار:</h3>
-
-        <div class="form-group">
-            <label><input type="radio" name="payment_method" value="d17" required> D17</label>
-            <p>أرسل 1 دينار إلى الرقم: <strong>52897520</strong></p>
-            <div class="upload-area">
-                <label>رفع صورة الإرسال:</label>
-                <input type="file" name="payment_proof" accept="image/*" required>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label><input type="radio" name="payment_method" value="card"> بطاقة شحن (أوريدو / أورانج / تونس تيليكوم)</label>
-            <input type="text" name="card_number" placeholder="أدخل الرقم المكتوب على البطاقة (8 أرقام)" maxlength="8">
-            <div class="upload-area">
-                <label>رفع صورة البطاقة:</label>
-                <input type="file" name="payment_proof" accept="image/*" required>
-            </div>
-        </div>
-
-        <button type="submit" class="btn">إرسال المنتج للنشر</button>
-    </form>
-</div>
-</body>
-  </html>
-  <?php
-session_start();
-require_once '../config.php';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $password = $_POST['password'];
-    if ($password === ADMIN_PASSWORD) {
-        $_SESSION['admin_logged_in'] = true;
+    if (isset($_GET['action']) && isset($_GET['id'])) {
+        $id = (int)$_GET['id'];
+        if ($_GET['action'] === 'approve') {
+            $pdo->prepare("UPDATE products SET status = 'approved' WHERE id = ?")->execute([$id]);
+        } elseif ($_GET['action'] === 'reject') {
+            $pdo->prepare("UPDATE products SET status = 'rejected' WHERE id = ?")->execute([$id]);
+        }
         header('Location: dashboard.php');
         exit;
-    } else {
-        $error = "كلمة المرور غير صحيحة!";
     }
+    $stmt = $pdo->query("SELECT * FROM products WHERE status = 'pending' ORDER BY created_at DESC");
+    $pending_products = $stmt->fetchAll();
+    ?>
+    <!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <title>لوحة التحكم - D17Gaming</title>
+        <link rel="stylesheet" href="../style.css">
+    </head>
+    <body>
+    <div class="container">
+        <h2>لوحة التحكم</h2>
+        <p><a href="dashboard.php" style="color:#0d6efd;">الرئيسية</a> | <a href="logout.php" style="color:#dc3545;">تسجيل خروج</a></p>
+        <h3>المنتجات في انتظار المراجعة (<?= count($pending_products) ?>)</h3>
+        <?php if (empty($pending_products)): ?>
+            <p style="text-align:center; color:#666;">لا توجد منتجات جديدة.</p>
+        <?php else: ?>
+            <?php foreach ($pending_products as $p): ?>
+                <div style="border:1px solid #eee; padding:15px; margin:15px 0; border-radius:8px; background:#fafafa;">
+                    <h4>نوع: <?= $p['product_type'] === 'freefire' ? 'Free Fire' : ($p['product_type'] === 'pes' ? 'PES' : 'آخر') ?></h4>
+                    <p><strong>الوصف:</strong> <?= htmlspecialchars($p['description']) ?></p>
+                    <?php if ($p['facebook_link']): ?>
+                        <p><a href="<?= htmlspecialchars($p['facebook_link']) ?>" target="_blank" style="color:#0d6efd;">رابط فيسبوك</a></p>
+                    <?php endif; ?>
+                    <p><strong>طريقة الدفع:</strong> <?= $p['payment_method'] === 'd17' ? 'D17' : 'بطاقة' ?></p>
+                    <p><strong>صورة المنتج:</strong><br><img src="../<?= htmlspecialchars($p['image_url']) ?>" width="150" style="margin:5px; border:1px solid #ddd;"></p>
+                    <p><strong>إثبات الدفع:</strong><br><img src="../<?= htmlspecialchars($p['payment_proof_url']) ?>" width="150" style="margin:5px; border:1px solid #ddd;"></p>
+                    <?php if ($p['card_number']): ?>
+                        <p><strong>رقم البطاقة:</strong> <?= htmlspecialchars($p['card_number']) ?></p>
+                    <?php endif; ?>
+                    <a href="?action=approve&id=<?= $p['id'] ?>" style="background:green; color:white; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin:5px;">✅ قبول</a>
+                    <a href="?action=reject&id=<?= $p['id'] ?>" style="background:red; color:white; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin:5px;">❌ رفض</a>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+    </body>
+    </html>
+    <?php
+    exit;
 }
-?>
 
-<!DOCTYPE html>
-<html dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>لوحة التحكم - تسجيل الدخول</title>
-    <link rel="stylesheet" href="../style.css">
-</head>
-<body>
-<div class="container">
-    <h2>تسجيل الدخول إلى لوحة التحكم</h2>
-    <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-    <form method="POST">
-        <div class="form-group">
-            <label>كلمة المرور:</label>
-            <input type="password" name="password" required>
-        </div>
-        <button type="submit" class="btn">دخول</button>
-    </form>
-</div>
-</body>
-</html>
-<?php
-session_start();
-if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
+// ================ admin/logout.php ================
+if (strpos($_SERVER['REQUEST_URI'], '/admin/logout.php') !== false) {
+    session_start();
+    session_destroy();
     header('Location: login.php');
     exit;
 }
-require_once '../config.php';
 
-try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-} catch (Exception $e) {
-    die("خطأ في الاتصال بقاعدة البيانات.");
-}
-
-if (isset($_GET['action']) && isset($_GET['id'])) {
-    $id = (int)$_GET['id'];
-    if ($_GET['action'] === 'approve') {
-        $pdo->prepare("UPDATE products SET status = 'approved' WHERE id = ?")->execute([$id]);
-    } elseif ($_GET['action'] === 'reject') {
-        $pdo->prepare("UPDATE products SET status = 'rejected' WHERE id = ?")->execute([$id]);
-    }
-    header('Location: dashboard.php');
-    exit;
-}
-
-$stmt = $pdo->query("SELECT * FROM products WHERE status = 'pending' ORDER BY created_at DESC");
-$pending_products = $stmt->fetchAll();
-?>
-
-<!DOCTYPE html>
-<html dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>لوحة التحكم - D17Gaming</title>
-    <link rel="stylesheet" href="../style.css">
-</head>
-<body>
-<div class="container">
-    <h2>لوحة التحكم</h2>
-    <p><a href="dashboard.php" style="color:#0d6efd;">الرئيسية</a> | <a href="logout.php" style="color:#dc3545;">تسجيل خروج</a></p>
-
-    <h3>المنتجات في انتظار المراجعة (<?= count($pending_products) ?>)</h3>
-
-    <?php if (empty($pending_products)): ?>
-        <p style="text-align:center; color:#666;">لا توجد منتجات جديدة.</p>
-    <?php else: ?>
-        <?php foreach ($pending_products as $p): ?>
-            <div style="border:1px solid #eee; padding:15px; margin:15px 0; border-radius:8px; background:#fafafa;">
-                <h4>نوع: <?= $p['product_type'] === 'freefire' ? 'Free Fire' : ($p['product_type'] === 'pes' ? 'PES' : 'آخر') ?></h4>
-                <p><strong>الوصف:</strong> <?= htmlspecialchars($p['description']) ?></p>
-                <?php if ($p['facebook_link']): ?>
-                    <p><a href="<?= htmlspecialchars($p['facebook_link']) ?>" target="_blank" style="color:#0d6efd;">رابط فيسبوك</a></p>
-                <?php endif; ?>
-                
-                <p><strong>طريقة الدفع:</strong> <?= $p['payment_method'] === 'd17' ? 'D17' : 'بطاقة' ?></p>
-                
-                <p><strong>صورة المنتج:</strong><br>
-                   <img src="../<?= htmlspecialchars($p['image_url']) ?>" width="150" style="margin:5px; border:1px solid #ddd;">
-                </p>
-                <p><strong>إثبات الدفع:</strong><br>
-                   <img src="../<?= htmlspecialchars($p['payment_proof_url']) ?>" width="150" style="margin:5px; border:1px solid #ddd;">
-                </p>
-
-                <?php if ($p['card_number']): ?>
-                    <p><strong>رقم البطاقة:</strong> <?= htmlspecialchars($p['card_number']) ?></p>
-                <?php endif; ?>
-
-                <a href="?action=approve&id=<?= $p['id'] ?>" style="background:green; color:white; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin:5px;">✅ قبول</a>
-                <a href="?action=reject&id=<?= $p['id'] ?>" style="background:red; color:white; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin:5px;">❌ رفض</a>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</div>
-</body>
-</html>
-<?php
-session_start();
-session_destroy();
-header('Location: login.php');
-exit;
+// ================ صفحة افتراضية ================
+echo "<h2>مرحباً بك في D17Gaming.tn</h2><p>الملفات جاهزة. تأكد من تحميلها في الهيكل الصحيح.</p>";
 ?>
